@@ -1,0 +1,43 @@
+name: schedule update data
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron: '1 12 * * 1'
+  push:
+    branches:
+      - master
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 16.x
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: generate new build
+        run: |
+          npm install
+          npm run generate
+          npm run build
+          npm run postbuild
+
+      - name: Deploy 🚀
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                folder: build # The folder the action should deploy.
